@@ -1,0 +1,509 @@
+:root {
+  /* Vibrant & Inspiring Color Palette */
+  --primary-color: #9f7aea; /* Vibrant Purple */
+  --primary-hover-color: #8b5cf6; /* Deeper Purple */
+  --secondary-accent-color: #f59e0b; /* Warm Amber */
+  --background-color: #1a202c; /* Dark Slate Blue */
+  --surface-color: #2d3748; /* Lighter Slate Blue */
+  --text-color: #e2e8f0; /* Light Greyish Blue */
+  --text-secondary-color: #a0aec0; /* Medium Greyish Blue */
+  --font-family: 'Poppins', sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--background-color);
+  color: var(--text-color);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.container {
+  width: 90%;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+main {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.header {
+  padding: 1.5rem 0;
+  background-color: rgba(26, 32, 44, 0.8); /* Updated with new background color */
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--surface-color);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: var(--primary-color);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.nav-links .btn-secondary,
+.user-info .btn-secondary {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  background: none;
+  border-radius: 5px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-family: var(--font-family);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.nav-links .btn-secondary:hover,
+.user-info .btn-secondary:hover {
+  background-color: var(--primary-color);
+  color: #fff;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.user-info span {
+    color: var(--text-secondary-color);
+}
+
+
+/* Hero Section */
+.hero {
+  min-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 4rem 0;
+  background: linear-gradient(rgba(26, 32, 44, 0.9), rgba(26, 32, 44, 0.9)), url('https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1920&q=80') no-repeat center center/cover;
+}
+
+.hero-content {
+  max-width: 800px;
+}
+
+.hero h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+}
+
+.hero h1 span {
+  /* Gradient text for more impact */
+  background: linear-gradient(45deg, var(--primary-color), var(--secondary-accent-color));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero p {
+  font-size: 1.1rem;
+  color: var(--text-secondary-color);
+  margin-bottom: 2rem;
+}
+
+.btn-primary {
+  display: inline-block;
+  width: 100%;
+  /* Updated gradient background */
+  background: linear-gradient(45deg, var(--primary-color), var(--primary-hover-color));
+  color: #fff;
+  padding: 1rem 2.5rem;
+  border-radius: 50px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(159, 122, 234, 0.2); /* Shadow matches primary color */
+  border: none;
+  cursor: pointer;
+}
+
+.hero .btn-primary {
+    width: auto;
+}
+
+
+.btn-primary:hover {
+  transform: translateY(-3px);
+  background: linear-gradient(45deg, var(--primary-hover-color), var(--primary-color));
+  box-shadow: 0 6px 20px rgba(159, 122, 234, 0.3); /* Enhanced shadow on hover */
+}
+
+.btn-primary:disabled {
+    background: #5a647e;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+
+/* Sections */
+.section {
+  padding: 5rem 0;
+}
+
+.section-title {
+  text-align: center;
+  font-size: 2rem;
+  margin-bottom: 3rem;
+  font-weight: 600;
+  text-shadow: 0 0 8px rgba(159, 122, 234, 0.2); /* Subtle glow effect */
+}
+
+/* Benefits Section */
+.benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.benefit-card {
+  background-color: var(--surface-color);
+  padding: 2rem;
+  border-radius: 8px;
+  text-align: center;
+  border: 1px solid #4a5568; /* Updated border color */
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.benefit-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.benefit-card .icon {
+  margin-bottom: 1.5rem;
+  color: var(--secondary-accent-color); /* Use accent color for icons */
+}
+
+.benefit-card h3 {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.benefit-card p {
+  color: var(--text-secondary-color);
+}
+
+/* Quote Section */
+.quote-section {
+  background-color: var(--surface-color);
+  text-align: center;
+}
+
+.quote-content blockquote {
+  font-size: 1.5rem;
+  font-style: italic;
+  max-width: 800px;
+  margin: 0 auto;
+  color: var(--text-secondary-color);
+  border-left: 4px solid var(--primary-color);
+  padding-left: 2rem;
+  text-align: left;
+}
+
+.quote-content cite {
+  display: block;
+  margin-top: 1rem;
+  font-style: normal;
+  font-weight: 600;
+  color: var(--text-color);
+  text-align: left;
+  padding-left: 2rem;
+}
+
+/* Footer */
+.footer {
+  background-color: var(--surface-color);
+  padding: 3rem 0;
+  border-top: 1px solid #4a5568; /* Updated border color */
+  text-align: center;
+}
+
+.social-links {
+  margin-bottom: 1.5rem;
+}
+
+.social-links a {
+  color: var(--text-secondary-color);
+  margin: 0 0.75rem;
+  font-size: 1.5rem;
+  transition: color 0.3s ease;
+}
+
+.social-links a:hover {
+  color: var(--primary-color);
+}
+
+.footer-links {
+  margin-bottom: 1.5rem;
+}
+
+.footer-links a {
+  color: var(--text-secondary-color);
+  text-decoration: none;
+  margin: 0 1rem;
+  transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+  color: var(--text-color);
+}
+
+.copyright {
+  color: var(--text-secondary-color);
+  font-size: 0.9rem;
+}
+
+/* Payment Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background: var(--surface-color);
+    padding: 2.5rem;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 450px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    position: relative;
+    text-align: center;
+    border: 1px solid #4a5568;
+}
+
+.modal-content h2 {
+    margin-bottom: 0.5rem;
+    font-size: 1.8rem;
+}
+
+.modal-content p {
+    color: var(--text-secondary-color);
+    margin-bottom: 1.5rem;
+}
+
+.modal-content form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.modal-content input {
+    padding: 0.8rem 1rem;
+    border-radius: 6px;
+    border: 1px solid #4a5568;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    font-size: 1rem;
+}
+.modal-content input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(159, 122, 234, 0.3);
+}
+
+.modal-content small {
+    margin-top: 1rem;
+    display: block;
+    color: var(--text-secondary-color);
+    font-size: 0.8rem;
+}
+
+.modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    color: var(--text-secondary-color);
+    font-size: 1.8rem;
+    cursor: pointer;
+    line-height: 1;
+}
+
+/* Ideas Page / Downloads Page */
+.ideas-page {
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+    text-align: center;
+}
+
+.ideas-intro {
+    max-width: 700px;
+    margin: 0 auto 3rem auto;
+    color: var(--text-secondary-color);
+    font-size: 1.1rem;
+}
+
+.downloads-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    text-align: left;
+}
+
+.download-card {
+    background: var(--surface-color);
+    padding: 2rem;
+    border-radius: 8px;
+    border: 1px solid #4a5568;
+    transition: transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+.download-card:hover {
+    transform: translateY(-5px);
+}
+.download-card h3 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+.download-card p {
+    color: var(--text-secondary-color);
+    flex-grow: 1;
+    margin-bottom: 1rem;
+}
+
+.btn-download {
+    display: block;
+    width: 100%;
+    background-color: var(--secondary-accent-color);
+    color: var(--background-color);
+    padding: 0.75rem 1rem;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 600;
+    text-align: center;
+    transition: background-color 0.3s ease;
+}
+
+.btn-download:hover {
+    background-color: #ffcf7b; /* Lighter shade of amber */
+}
+
+/* Auth Pages (Login/Register) */
+.auth-container {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 0;
+}
+
+.auth-card {
+    width: 90%;
+    max-width: 400px;
+    background-color: var(--surface-color);
+    padding: 2.5rem;
+    border-radius: 12px;
+    border: 1px solid #4a5568;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    text-align: center;
+}
+.auth-card h2 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+.auth-card p {
+    color: var(--text-secondary-color);
+    margin-bottom: 2rem;
+}
+.auth-card form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+.auth-card input {
+    padding: 0.8rem 1rem;
+    border-radius: 6px;
+    border: 1px solid #4a5568;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    font-size: 1rem;
+}
+.auth-card input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(159, 122, 234, 0.3);
+}
+
+.auth-switch {
+    font-size: 0.9rem;
+}
+.auth-switch button {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    font-weight: 600;
+    cursor: pointer;
+    font-size: inherit;
+}
+.auth-switch button:hover {
+    text-decoration: underline;
+}
+
+
+/* Responsive */
+@media (min-width: 768px) {
+  .hero h1 {
+    font-size: 3.5rem;
+  }
+  .hero p {
+    font-size: 1.25rem;
+  }
+  .section-title {
+    font-size: 2.5rem;
+  }
+}

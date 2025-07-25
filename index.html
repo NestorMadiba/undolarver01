@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ideas de Negocio por 1 Dólar | Emprende en Argentina</title>
+
+  <!-- SEO & Social Sharing Meta Tags -->
+  <meta name="description"
+    content="Ideas de negocio rentables en Argentina por solo $1300 ARS. Acceso inmediato a guías y contenido exclusivo para empezar a emprender hoy.">
+  <meta name="keywords"
+    content="negocios, emprendimiento, argentina, ideas de negocio, ganar dinero, 1 dólar, $1300 ARS">
+  <meta property="og:title" content="Tu Próximo Negocio por 1 Dólar | Ideas que Funcionan">
+  <meta property="og:description"
+    content="Con un dólar no hacés mucho… excepto cambiar tu futuro. Accedé a 10 ideas de negocio probadas en Argentina.">
+  <meta property="og:image" content="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=1200&q=80">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Tu Próximo Negocio por 1 Dólar | Ideas que Funcionan">
+  <meta name="twitter:description"
+    content="Con un dólar no hacés mucho… excepto cambiar tu futuro. Accedé a 10 ideas de negocio probadas en Argentina.">
+  <meta name="twitter:image" content="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=1200&q=80">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="index.css" />
+
+  <!-- Babel Standalone for JSX transpilation in browser -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client"
+      }
+    }
+  </script>
+<link rel="stylesheet" href="/index.css">
+</head>
+
+<body>
+  <div id="root"></div>
+  <!-- Main application script, transpiled by Babel -->
+  <script type="text/babel" data-type="module">
+    import React, { useState, useEffect } from 'react';
+    import ReactDOM from 'react-dom/client';
+
+    // --- Configuración del Backend ---
+    // IMPORTANTE: Esta es la URL de tu backend.
+    // Para desarrollo en tu PC, déjala como 'http://localhost:4000/api'.
+    // Para producción, debes reemplazarla con la URL que te da el servicio de hosting de backend (ej: Render).
+    // Ejemplo para producción: 'https://mi-super-app.onrender.com/api'
+    const API_URL = 'http://localhost:4000/api'; // <-- ¡CAMBIA ESTO PARA PRODUCCIÓN!
+
+
+    // --- Contenido Estático de PDFs ---
+    const PDF_CONTENT = [
+        { title: "Guía de Marketing para Redes Sociales", description: "Aprende a promocionar tu nuevo negocio en Instagram y Facebook para conseguir tus primeros clientes.", url: "/pdfs/guia-marketing-redes.pdf" },
+        { title: "Modelo de Negocio 'Servicios Locales'", description: "Desde pasear perros hasta hacer mandados. Un plan paso a paso para ofrecer servicios en tu barrio.", url: "/pdfs/modelo-servicios-locales.pdf" },
+        { title: "Creación de Contenido Digital Básico", description: "Cómo empezar un blog o un canal de YouTube con presupuesto cero para monetizar tu pasión.", url: "/pdfs/guia-contenido-digital.pdf" },
+        { title: "Artesanías y Productos Hechos a Mano", description: "Ideas y consejos para vender tus creaciones en ferias locales y online.", url: "/pdfs/guia-artesanias.pdf" },
+        { title: "Clases Particulares y Tutorías", description: "Convierte tu conocimiento en un ingreso extra enseñando a otros.", url: "/pdfs/guia-tutorias.pdf" },
+        { title: "Organización de Eventos Pequeños", description: "Planifica y coordina pequeños eventos o reuniones para tu comunidad.", url: "/pdfs/guia-eventos.pdf" },
+        { title: "Micro-Consultoría Online", description: "Ofrece tu expertise en un nicho específico a través de sesiones cortas y pagas.", url: "/pdfs/guia-consultoria.pdf" },
+        { title: "Fotografía de Producto para Emprendedores", description: "Ayuda a otros negocios a mejorar su imagen con fotos de calidad.", url: "/pdfs/guia-fotografia.pdf" },
+        { title: "Edición de Video para Redes Sociales", description: "Ofrece servicios de edición rápida para reels y tiktoks a influencers y marcas.", url: "/pdfs/guia-edicion-video.pdf" },
+        { title: "Optimización de Finanzas Personales", description: "Una guía para organizar tus finanzas y poder invertir en tu próximo gran proyecto.", url: "/pdfs/guia-finanzas.pdf" }
+    ];
+
+    // --- SVG Icons as Components ---
+    const LightbulbIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <path d="M15.09 16.05a1.5 1.5 0 0 1-2.18 0l-3.82-3.82a1.5 1.5 0 0 1 0-2.18l.82-.82a1.5 1.5 0 0 0 0-2.18l-1.09-1.09a1.5 1.5 0 0 0-2.18 0l-3.82 3.82a1.5 1.5 0 0 0 0 2.18l8.64 8.64a1.5 1.5 0 0 0 2.18 0l5.54-5.54a1.5 1.5 0 0 0 0-2.18l-1.09-1.09a1.5 1.5 0 0 0-2.18 0z" /> <path d="M12 6.36L12.71 7.07" /> <path d="M17.64 8.36L16.93 9.07" /> <path d="M19 12L18.29 12" /> <path d="M17.64 15.64L16.93 14.93" /> <path d="M12 17.64L12.71 16.93" /> </svg> );
+    const ZapIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /> </svg> );
+    const DownloadIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /> <polyline points="7 10 12 15 17 10" /> <line x1="12" y1="15" x2="12" y2="3" /> </svg> );
+    const InstagramIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <rect x="2" y="2" width="20" height="20" rx="5" ry="5" /> <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /> <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" /> </svg> );
+    const FacebookIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" /> </svg> );
+    const TwitterIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z" /> </svg> );
+    const WhatsAppIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <path d="M21.44 11.05l-9.19 9.19a6.003 6.003 0 1 1-8.49-8.49l9.19-9.19a4.002 4.002 0 0 1 5.66 5.66l-9.2 9.19a2.001 2.001 0 1 1-2.83-2.83l8.49-8.48" /> </svg> );
+
+    // --- AUTHENTICATION COMPONENTS ---
+    const AuthPage = ({ children }) => (
+      <div className="auth-container">
+        <div className="auth-card">{children}</div>
+      </div>
+    );
+
+    const LoginPage = ({ onLogin, onNavigate }) => {
+        const [email, setEmail] = useState('');
+        const [password, setPassword] = useState('');
+        const [error, setError] = useState(null);
+        const [isLoading, setIsLoading] = useState(false);
+
+        const handleSubmit = async (e) => {
+            e.preventDefault();
+            setError(null);
+            setIsLoading(true);
+
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password }),
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.message || 'Error al iniciar sesión.');
+                }
+                
+                onLogin(data); // `data` contiene { id, name, email }
+
+            } catch (err) {
+                setError(err.message);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        return (
+          <AuthPage>
+            <h2>Iniciar Sesión</h2>
+            <p>Ingresá para acceder a tu contenido.</p>
+            <form onSubmit={handleSubmit}>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="tu.email@ejemplo.com" required disabled={isLoading} />
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Contraseña" required disabled={isLoading} />
+              {error && <p style={{color: '#f56565', fontSize: '0.9rem'}}>{error}</p>}
+              <button type="submit" className="btn-primary" disabled={isLoading}>
+                {isLoading ? 'Ingresando...' : 'Ingresar'}
+              </button>
+            </form>
+            <p className="auth-switch">¿No tenés cuenta? <button onClick={() => onNavigate('register')} disabled={isLoading}>Registrate</button></p>
+          </AuthPage>
+        );
+    };
+
+    const RegisterPage = ({ onRegister, onNavigate }) => {
+      const [name, setName] = useState('');
+      const [email, setEmail] = useState('');
+      const [password, setPassword] = useState('');
+      const [error, setError] = useState(null);
+      const [isLoading, setIsLoading] = useState(false);
+
+      const handleSubmit = async (e) => {
+          e.preventDefault();
+          setError(null);
+          setIsLoading(true);
+
+          try {
+              const response = await fetch(`${API_URL}/register`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ name, email, password }),
+              });
+              
+              const data = await response.json();
+              if (!response.ok) {
+                  throw new Error(data.message || 'Error al registrar.');
+              }
+
+              onRegister(data); // Auto-login after successful registration
+
+          } catch (err) {
+              setError(err.message);
+          } finally {
+              setIsLoading(false);
+          }
+      };
+      
+      return (
+        <AuthPage>
+          <h2>Crear Cuenta</h2>
+          <p>Es rápido y fácil. Empezá ahora.</p>
+          <form onSubmit={handleSubmit}>
+            <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Tu nombre" required disabled={isLoading} />
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="tu.email@ejemplo.com" required disabled={isLoading} />
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Creá una contraseña" required disabled={isLoading} />
+            {error && <p style={{color: '#f56565', fontSize: '0.9rem'}}>{error}</p>}
+            <button type="submit" className="btn-primary" disabled={isLoading}>
+              {isLoading ? 'Registrando...' : 'Registrarme'}
+            </button>
+          </form>
+          <p className="auth-switch">¿Ya tenés cuenta? <button onClick={() => onNavigate('login')} disabled={isLoading}>Iniciá Sesión</button></p>
+        </AuthPage>
+      );
+    };
+
+    // --- CORE COMPONENTS ---
+    const Header = ({ user, onLogout, onNavigate }) => (
+        <header className="header">
+            <div className="container nav">
+                <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('home'); }} className="logo">1Dolar.Ideas</a>
+                <nav className="nav-links">
+                    {user ? (
+                        <div className="user-info">
+                            <span>{user.email}</span>
+                            <button onClick={onLogout} className="btn-secondary">Salir</button>
+                        </div>
+                    ) : (
+                        <button onClick={() => onNavigate('login')} className="btn-secondary">Iniciar Sesión</button>
+                    )}
+                </nav>
+            </div>
+        </header>
+    );
+
+    const Hero = ({ onAccessClick }) => (
+        <section className="hero">
+            <div className="hero-content">
+                <h1>¿Qué podés hacer con <span>1 dólar</span>? Te damos 10 ideas para cambiar tu vida.</h1>
+                <p>Dejá de gastar en cosas que no suman. Invertí en tu futuro con ideas de negocio reales, simples y probadas en Argentina.</p>
+                <button onClick={onAccessClick} className="btn-primary">
+                    Accedé ahora por $1300 ARS
+                </button>
+            </div>
+        </section>
+    );
+
+    const Benefit = ({ icon, title, children }) => ( <div className="benefit-card"> <div className="icon">{icon}</div> <h3>{title}</h3> <p>{children}</p> </div> );
+    const BenefitsSection = () => ( <section id="benefits" className="section"> <div className="container"> <h2 className="section-title">Beneficios Exclusivos</h2> <div className="benefits-grid"> <Benefit icon={<LightbulbIcon />} title="Negocios Reales"> Ideas simples y probadas, adaptadas al mercado argentino actual. </Benefit> <Benefit icon={<ZapIcon />} title="Acceso Inmediato"> Tu pago se confirma y al instante tenés todo el contenido disponible. </Benefit> <Benefit icon={<DownloadIcon />} title="Guías en PDF"> No solo ideas, también guías completas en formato PDF para que empieces con todo. </Benefit> </div> </div> </section> );
+    const QuoteSection = () => ( <section className="section quote-section"> <div className="container"> <div className="quote-content"> <blockquote>“Con un dólar no hacés mucho… excepto cambiar tu futuro.”</blockquote> <cite>- El equipo de 1Dolar.Ideas</cite> </div> </div> </section> );
+    const Footer = () => ( <footer className="footer"> <div className="container"> <div className="social-links"> <a href="#" aria-label="Instagram"><InstagramIcon /></a> <a href="#" aria-label="Facebook"><FacebookIcon /></a> <a href="#" aria-label="Twitter"><TwitterIcon /></a> <a href="#" aria-label="WhatsApp"><WhatsAppIcon /></a> </div> <div className="footer-links"> <a href="#">Términos y Condiciones</a> <a href="#">Contacto</a> <a href="#">Privacidad</a> </div> <p className="copyright">{`© ${new Date().getFullYear()} 1Dolar.Ideas. Todos los derechos reservados.`}</p> </div> </footer> );
+
+    const PaymentModal = ({ isOpen, onClose }) => {
+        const [isLoading, setIsLoading] = useState(false);
+        const [error, setError] = useState(null);
+        
+        if (!isOpen) return null;
+
+        const handlePayment = async (e) => {
+            e.preventDefault();
+            setIsLoading(true);
+            setError(null);
+            
+            try {
+                const response = await fetch(`${API_URL}/create-payment-preference`, { method: 'POST' });
+                const preference = await response.json();
+
+                if (!response.ok) {
+                  throw new Error(preference.message || "Error al crear el pago.");
+                }
+
+                // Redireccionar al checkout de Mercado Pago
+                window.location.href = preference.init_point;
+
+            } catch(err) {
+                setError(err.message);
+                setIsLoading(false);
+            }
+        };
+
+        return (
+            <div className="modal-overlay" onClick={onClose}>
+                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                    <button className="modal-close" onClick={onClose}>&times;</button>
+                    <h2>Confirmación de Pago</h2>
+                    <p>Estás a un paso de acceder al contenido. Serás redirigido a la plataforma de pago segura de Mercado Pago.</p>
+                    <form onSubmit={handlePayment}>
+                        {error && <p style={{color: '#f56565', fontSize: '0.9rem', marginBottom: '1rem'}}>{error}</p>}
+                        <button type="submit" className="btn-primary" disabled={isLoading}>
+                            {isLoading ? 'Procesando...' : 'Ir a Pagar $1300 ARS'}
+                        </button>
+                    </form>
+                     <small>Al hacer clic, serás llevado a Mercado Pago para completar la compra.</small>
+                </div>
+            </div>
+        );
+    };
+
+    const IdeasPage = () => (
+        <div className="container ideas-page">
+            <h1 className="section-title">¡Felicitaciones! El acceso es tuyo.</h1>
+            <p className="ideas-intro">Aquí están las 10 guías de negocio que te prometimos. Haz clic para descargar cada una y ¡mucha suerte en tu camino como emprendedor!</p>
+            <div className="downloads-grid">
+                {PDF_CONTENT.map((pdf, i) => (
+                    <div key={i} className="download-card">
+                        <h3>{pdf.title}</h3>
+                        <p>{pdf.description}</p>
+                        <a href={pdf.url} className="btn-download" target="_blank" rel="noopener noreferrer" download>Descargar PDF</a>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+
+    const HomePage = ({ onAccessClick }) => (
+        <React.Fragment>
+            <Hero onAccessClick={onAccessClick} />
+            <BenefitsSection />
+            <QuoteSection />
+        </React.Fragment>
+    );
+
+    // --- MAIN APP COMPONENT (ROUTER) ---
+    const App = () => {
+        const [page, setPage] = useState('home'); 
+        const [user, setUser] = useState(null);
+        const [isPaid, setPaid] = useState(false);
+        const [isModalOpen, setModalOpen] = useState(false);
+
+        // Este efecto se ejecuta una sola vez para comprobar si el pago fue exitoso
+        useEffect(() => {
+            const queryParams = new URLSearchParams(window.location.search);
+            if (queryParams.get('status') === 'approved') {
+                console.log('Pago aprobado detectado. Desbloqueando contenido.');
+                setPaid(true);
+                setPage('ideas');
+                // Limpia la URL para no mostrar los parámetros de MP
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }, []);
+
+        // --- Handlers ---
+        const handleNavigate = (targetPage) => setPage(targetPage);
+
+        const handleLogin = (userData) => {
+            setUser(userData);
+            // En una app real, el estado de 'isPaid' debería venir del backend
+            // junto con los datos del usuario. Por ahora, si es `true` localmente, lo respetamos.
+            if (isPaid) {
+                setPage('ideas');
+            } else {
+                setPage('home');
+            }
+        };
+
+        const handleLogout = () => {
+            setUser(null);
+            setPage('home');
+        };
+
+        const handleAccessClick = () => {
+            if (user) {
+                setModalOpen(true);
+            } else {
+                setPage('login');
+            }
+        };
+
+        // --- Page Renderer ---
+        const renderPage = () => {
+            // Regla de oro: si el usuario pagó, siempre tiene acceso a las ideas.
+            if (isPaid) {
+                return <IdeasPage />;
+            }
+
+            switch (page) {
+                case 'login':
+                    return <LoginPage onLogin={handleLogin} onNavigate={handleNavigate} />;
+                case 'register':
+                    return <RegisterPage onRegister={handleLogin} onNavigate={handleNavigate} />; // onRegister también loguea
+                case 'home':
+                default:
+                    return <HomePage onAccessClick={handleAccessClick} />;
+            }
+        };
+
+        return (
+            <React.Fragment>
+                <Header user={user} onLogout={handleLogout} onNavigate={handleNavigate} />
+                <main>
+                    {renderPage()}
+                </main>
+                <Footer />
+                <PaymentModal 
+                    isOpen={isModalOpen} 
+                    onClose={() => setModalOpen(false)}
+                />
+            </React.Fragment>
+        );
+    };
+
+    const rootElement = document.getElementById('root');
+    if (rootElement) {
+      const root = ReactDOM.createRoot(rootElement);
+      root.render(
+        <React.StrictMode>
+          <App />
+        </React.StrictMode>
+      );
+    }
+  </script>
+<script type="module" src="/index.tsx"></script>
+</body>
+
+</html>

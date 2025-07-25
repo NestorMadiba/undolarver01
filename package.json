@@ -1,0 +1,18 @@
+{
+  "name": "ideas-1-dolar-backend",
+  "version": "1.0.0",
+  "description": "Servidor backend para la aplicación de ideas de negocio.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Senior Frontend Engineer",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "mercadopago": "^2.0.8"
+  }
+}
