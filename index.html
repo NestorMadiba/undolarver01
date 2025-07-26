@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -41,7 +41,6 @@
       }
     }
   </script>
-<link rel="stylesheet" href="/index.css">
 </head>
 
 <body>
@@ -53,10 +52,9 @@
 
     // --- Configuración del Backend ---
     // IMPORTANTE: Esta es la URL de tu backend.
-    // Para desarrollo en tu PC, déjala como 'http://localhost:4000/api'.
-    // Para producción, debes reemplazarla con la URL que te da el servicio de hosting de backend (ej: Render).
-    // Ejemplo para producción: 'https://mi-super-app.onrender.com/api'
-    const API_URL = 'http://localhost:4000/api'; // <-- ¡CAMBIA ESTO PARA PRODUCCIÓN!
+    // Para desarrollo local, déjala como 'http://localhost:4000/api'.
+    // Para producción, debes reemplazarla con la URL que te da Northflank, añadiendo '/api' al final.
+    const API_URL = 'http://localhost:4000/api'; // <-- ¡CAMBIA ESTO PARA PRODUCCIÓN CON LA URL DE NORTHFLANK!
 
 
     // --- Contenido Estático de PDFs ---
@@ -384,7 +382,6 @@
       );
     }
   </script>
-<script type="module" src="/index.tsx"></script>
 </body>
 
 </html>
