@@ -1,7 +1,5 @@
 {
   "name": "ideas-1-dolar-backend",
-  {
-  "name": "ideas-1-dolar-backend",
   "version": "1.0.0",
   "description": "Servidor backend para la aplicación de ideas de negocio.",
   "main": "server.js",
