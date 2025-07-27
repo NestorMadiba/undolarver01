@@ -23,11 +23,9 @@ if (!mpAccessToken || !frontendUrl || !databaseUrl) {
 // --- Configuración de la Base de Datos PostgreSQL ---
 const pool = new Pool({
   connectionString: databaseUrl,
-  // Render requiere SSL para conexiones externas, pero no para internas.
-  // Esta configuración es segura para el entorno de Render.
-  ssl: {
-    rejectUnauthorized: false
-  }
+  // Al no especificar la configuración de SSL, el cliente 'pg' la determinará
+  // automáticamente a partir de la connectionString. Esto es crucial para que 
+  // funcione tanto en el entorno local como en la red interna de Render.
 });
 
 // Función para inicializar la base de datos
@@ -126,12 +124,13 @@ app.post('/api/create-payment-preference', async (req, res) => {
         }],
         payer: { email: userEmail },
         back_urls: {
-            success: frontendUrl,
-            failure: frontendUrl,
-            pending: frontendUrl,
+            success: `${frontendUrl}?payment_status=success`, // Añadimos un parámetro para identificar la vuelta
+            failure: `${frontendUrl}?payment_status=failure`,
+            pending: `${frontendUrl}?payment_status=pending`,
         },
         auto_return: 'approved',
         external_reference: userId.toString(),
+        notification_url: `${process.env.BACKEND_URL || `https://${req.hostname}`}/api/payment-webhook` // Opcional, pero recomendado
     };
     try {
         const preference = new Preference(mpClient);
@@ -144,7 +143,33 @@ app.post('/api/create-payment-preference', async (req, res) => {
     }
 });
 
-// 4. Confirmación de Pago (desde el frontend, después de la redirección de MP)
+// 4. Confirmación de Pago (ahora vía Webhook de MercadoPago, más seguro)
+app.post('/api/payment-webhook', async (req, res) => {
+    const payment = req.body;
+    console.log('Webhook de Mercado Pago recibido:', payment);
+
+    if (payment.type === 'payment' && payment.data.id) {
+        try {
+            const mpPayment = await new Payment(mpClient).get({ id: payment.data.id });
+            const userId = mpPayment.external_reference;
+            
+            if (mpPayment.status === 'approved' && userId) {
+                 const query = 'UPDATE users SET paid = TRUE WHERE id = $1 RETURNING email';
+                 const result = await pool.query(query, [userId]);
+                 if (result.rowCount > 0) {
+                    console.log(`WEBHOOK: Pago confirmado en DB para el usuario: ${result.rows[0].email}`);
+                 }
+            }
+        } catch (error) {
+            console.error('Error procesando webhook de MP:', error);
+            return res.sendStatus(500);
+        }
+    }
+    res.sendStatus(200);
+});
+
+
+// 5. Confirmación de Pago (desde el frontend, como respaldo al webhook)
 app.post('/api/confirm-payment', async (req, res) => {
     const { userId } = req.body;
     if (!userId) return res.status(400).json({ message: 'User ID es requerido.' });
@@ -153,7 +178,7 @@ app.post('/api/confirm-payment', async (req, res) => {
     try {
         const result = await pool.query(query, [userId]);
         if (result.rowCount > 0) {
-            console.log(`Pago confirmado en DB para el usuario: ${result.rows[0].email}`);
+            console.log(`Pago confirmado en DB (vía frontend) para el usuario: ${result.rows[0].email}`);
             res.status(200).json({ message: 'Pago confirmado exitosamente.' });
         } else {
             console.error(`Intento de confirmación para usuario no encontrado en DB: ${userId}`);
@@ -165,7 +190,7 @@ app.post('/api/confirm-payment', async (req, res) => {
     }
 });
 
-// 5. Endpoint de Administración para Marcar Pago Manualmente
+// 6. Endpoint de Administración para Marcar Pago Manualmente
 app.post('/api/mark-as-paid', async (req, res) => {
     const { email } = req.body;
     // En un futuro, este endpoint debería estar protegido por una clave de API o autenticación de admin.
@@ -193,6 +218,7 @@ const startServer = async () => {
     await initializeDatabase();
     app.listen(port, () => {
         console.log(`Servidor escuchando en el puerto ${port}`);
+        console.log(`URL del Frontend configurada: ${frontendUrl}`);
     });
 };
 
