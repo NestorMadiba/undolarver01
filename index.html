@@ -1,40 +1,40 @@
-<<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ideas de Negocio por 1 Dólar | Emprende en Argentina</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ideas de Negocio por 1 Dólar | Emprende en Argentina</title>
 
-  <!-- SEO & Social Sharing Meta Tags -->
-  <meta name="description"
-    content="Ideas de negocio rentables en Argentina por solo $1300 ARS. Acceso inmediato a guías y contenido exclusivo para empezar a emprender hoy.">
-  <meta name="keywords"
-    content="negocios, emprendimiento, argentina, ideas de negocio, ganar dinero, 1 dólar, $1300 ARS">
-  <meta property="og:title" content="Tu Próximo Negocio por 1 Dólar | Ideas que Funcionan">
-  <meta property="og:description"
-    content="Con un dólar no hacés mucho… excepto cambiar tu futuro. Accedé a 10 ideas de negocio probadas en Argentina.">
-  <meta property="og:image" content="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=1200&q=80">
-  <meta property="og:type" content="website">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Tu Próximo Negocio por 1 Dólar | Ideas que Funcionan">
-  <meta name="twitter:description"
-    content="Con un dólar no hacés mucho… excepto cambiar tu futuro. Accedé a 10 ideas de negocio probadas en Argentina.">
-  <meta name="twitter:image" content="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=1200&q=80">
+    <!-- SEO & Social Sharing Meta Tags -->
+    <meta name="description"
+        content="Ideas de negocio rentables en Argentina por solo $1300 ARS. Acceso inmediato a guías y contenido exclusivo para empezar a emprender hoy.">
+    <meta name="keywords"
+        content="negocios, emprendimiento, argentina, ideas de negocio, ganar dinero, 1 dólar, $1300 ARS">
+    <meta property="og:title" content="Tu Próximo Negocio por 1 Dólar | Ideas que Funcionan">
+    <meta property="og:description"
+        content="Con un dólar no hacés mucho… excepto cambiar tu futuro. Accedé a 10 ideas de negocio probadas en Argentina.">
+    <meta property="og:image" content="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=1200&q=80">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Tu Próximo Negocio por 1 Dólar | Ideas que Funcionan">
+    <meta name="twitter:description"
+        content="Con un dólar no hacés mucho… excepto cambiar tu futuro. Accedé a 10 ideas de negocio probadas en Argentina.">
+    <meta name="twitter:image" content="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=1200&q=80">
 
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-  <!-- Stylesheet -->
-  <link rel="stylesheet" href="index.css" />
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="index.css" />
 
-  <!-- Babel Standalone for JSX transpilation in browser -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Babel Standalone for JSX transpilation in browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <script type="importmap">
-    {
+    <script type="importmap">
+        {
       "imports": {
         "react": "https://esm.sh/react@18.2.0",
         "react-dom/client": "https://esm.sh/react-dom@18.2.0/client"
@@ -44,17 +44,17 @@
 </head>
 
 <body>
-  <div id="root"></div>
-  <!-- Main application script, transpiled by Babel -->
-  <script type="text/babel" data-type="module">
-    import React, { useState, useEffect } from 'react';
+    <div id="root"></div>
+    <!-- Main application script, transpiled by Babel -->
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect } from 'react';
     import ReactDOM from 'react-dom/client';
 
     // --- Configuración del Backend ---
     // IMPORTANTE: Esta es la URL de tu backend.
     // Para desarrollo local, déjala como 'http://localhost:4000/api'.
-    // Para producción, debes reemplazarla con la URL que te da Northflank, añadiendo '/api' al final.
-    const API_URL = 'http://localhost:4000/api'; // <-- ¡CAMBIA ESTO PARA PRODUCCIÓN CON LA URL DE NORTHFLANK!
+    // Para producción, debes reemplazarla con la URL que te da Render, añadiendo '/api' al final.
+    const API_URL = 'http://localhost:4000/api'; // <-- ¡CAMBIA ESTO PARA PRODUCCIÓN CON LA URL DE RENDER!
 
 
     // --- Contenido Estático de PDFs ---
@@ -221,53 +221,7 @@
     const Benefit = ({ icon, title, children }) => ( <div className="benefit-card"> <div className="icon">{icon}</div> <h3>{title}</h3> <p>{children}</p> </div> );
     const BenefitsSection = () => ( <section id="benefits" className="section"> <div className="container"> <h2 className="section-title">Beneficios Exclusivos</h2> <div className="benefits-grid"> <Benefit icon={<LightbulbIcon />} title="Negocios Reales"> Ideas simples y probadas, adaptadas al mercado argentino actual. </Benefit> <Benefit icon={<ZapIcon />} title="Acceso Inmediato"> Tu pago se confirma y al instante tenés todo el contenido disponible. </Benefit> <Benefit icon={<DownloadIcon />} title="Guías en PDF"> No solo ideas, también guías completas en formato PDF para que empieces con todo. </Benefit> </div> </div> </section> );
     const QuoteSection = () => ( <section className="section quote-section"> <div className="container"> <div className="quote-content"> <blockquote>“Con un dólar no hacés mucho… excepto cambiar tu futuro.”</blockquote> <cite>- El equipo de 1Dolar.Ideas</cite> </div> </div> </section> );
-    const Footer = () => ( <footer className="footer"> <div className="container"> <div className="social-links"> <a href="#" aria-label="Instagram"><InstagramIcon /></a> <a href="#" aria-label="Facebook"><FacebookIcon /></a> <a href="#" aria-label="Twitter"><TwitterIcon /></a> <a href="#" aria-label="WhatsApp"><WhatsAppIcon /></a> </div> <div className="footer-links"> <a href="#">Términos y Condiciones</a> <a href="#">Contacto</a> <a href="#">Privacidad</a> </div> <p className="copyright">{`© ${new Date().getFullYear()} 1Dolar.Ideas. Todos los derechos reservados.`}</p> </div> </footer> );
-
-    const PaymentModal = ({ isOpen, onClose }) => {
-        const [isLoading, setIsLoading] = useState(false);
-        const [error, setError] = useState(null);
-        
-        if (!isOpen) return null;
-
-        const handlePayment = async (e) => {
-            e.preventDefault();
-            setIsLoading(true);
-            setError(null);
-            
-            try {
-                const response = await fetch(`${API_URL}/create-payment-preference`, { method: 'POST' });
-                const preference = await response.json();
-
-                if (!response.ok) {
-                  throw new Error(preference.message || "Error al crear el pago.");
-                }
-
-                // Redireccionar al checkout de Mercado Pago
-                window.location.href = preference.init_point;
-
-            } catch(err) {
-                setError(err.message);
-                setIsLoading(false);
-            }
-        };
-
-        return (
-            <div className="modal-overlay" onClick={onClose}>
-                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                    <button className="modal-close" onClick={onClose}>&times;</button>
-                    <h2>Confirmación de Pago</h2>
-                    <p>Estás a un paso de acceder al contenido. Serás redirigido a la plataforma de pago segura de Mercado Pago.</p>
-                    <form onSubmit={handlePayment}>
-                        {error && <p style={{color: '#f56565', fontSize: '0.9rem', marginBottom: '1rem'}}>{error}</p>}
-                        <button type="submit" className="btn-primary" disabled={isLoading}>
-                            {isLoading ? 'Procesando...' : 'Ir a Pagar $1300 ARS'}
-                        </button>
-                    </form>
-                     <small>Al hacer clic, serás llevado a Mercado Pago para completar la compra.</small>
-                </div>
-            </div>
-        );
-    };
+    const Footer = () => ( <footer className="footer"> <div className="container"> <div className="social-links"> <a href="#" aria-label="Instagram"><InstagramIcon /></a> <a href="#" aria-label="Facebook"><FacebookIcon /></a> <a href="#" aria-label="Twitter"><TwitterIcon /></a> <a href="#" aria-label="WhatsApp"><WhatsAppIcon /></a> </div> <div className="footer-links"> <a href="#">Términos y Condiciones</a> <a href="mailto:undolarideas@gmail.com">Contacto</a> <a href="#">Privacidad</a> </div> <p className="copyright">{`© ${new Date().getFullYear()} 1Dolar.Ideas. Todos los derechos reservados.`}</p> </div> </footer> );
 
     const IdeasPage = () => (
         <div className="container ideas-page">
@@ -298,7 +252,6 @@
         const [page, setPage] = useState('home'); 
         const [user, setUser] = useState(null);
         const [isPaid, setPaid] = useState(false);
-        const [isModalOpen, setModalOpen] = useState(false);
 
         // Este efecto se ejecuta una sola vez para comprobar si el pago fue exitoso
         useEffect(() => {
@@ -332,11 +285,10 @@
         };
 
         const handleAccessClick = () => {
-            if (user) {
-                setModalOpen(true);
-            } else {
-                setPage('login');
-            }
+            // Se abre el link de pago directamente en una nueva pestaña.
+            // Para que funcione, el link de pago en Mercado Pago debe ser configurado
+            // para redirigir a `tudominio.com/index.html?status=approved` al completarse.
+            window.open('https://mpago.la/2abaCzZ', '_blank', 'noopener,noreferrer');
         };
 
         // --- Page Renderer ---
@@ -364,10 +316,6 @@
                     {renderPage()}
                 </main>
                 <Footer />
-                <PaymentModal 
-                    isOpen={isModalOpen} 
-                    onClose={() => setModalOpen(false)}
-                />
             </React.Fragment>
         );
     };
