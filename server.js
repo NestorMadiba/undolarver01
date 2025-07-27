@@ -1,9 +1,31 @@
+// --- "CAJA NEGRA" DE ERRORES PARA DEPURACIÓN EN RENDER ---
+// Captura cualquier error no controlado que de otra manera haría que el proceso se cierre silenciosamente.
+process.on('uncaughtException', (error, origin) => {
+    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+    console.log('!! ERROR NO CAPTURADO (uncaughtException) !!');
+    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+    console.log('Error:', error);
+    console.log('Origen:', origin);
+    console.log('Cerrando el proceso para evitar un estado inconsistente.');
+    process.exit(1); // Es crucial cerrar después de un error no capturado.
+});
+
+// Captura cualquier promesa rechazada que no tenga un .catch().
+process.on('unhandledRejection', (reason, promise) => {
+    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+    console.log('!! PROMESA RECHAZADA (unhandledRejection) !!');
+    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+    console.log('Razón del rechazo:', reason);
+    // No cerramos el proceso aquí, pero lo registramos para depuración.
+});
+// -----------------------------------------------------------
+
+
 // Cargar variables de entorno desde el archivo .env para desarrollo local
 require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
-// *** CORRECCIÓN CRÍTICA: Importar 'Payment' junto con los otros módulos. ***
 const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
 const { Pool } = require('pg');
 
@@ -14,7 +36,6 @@ const port = process.env.PORT || 4000;
 const mpAccessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
 const frontendUrl = process.env.FRONTEND_URL;
 const databaseUrl = process.env.DATABASE_URL;
-// *** NUEVO: La URL del backend ahora es obligatoria para los webhooks. ***
 const backendUrl = process.env.BACKEND_URL; 
 
 if (!mpAccessToken || !frontendUrl || !databaseUrl || !backendUrl) {
@@ -55,23 +76,17 @@ const corsOptions = {
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
-// Aumentar el límite de payload para los webhooks de Mercado Pago
 app.use(express.json({ limit: '5mb' }));
-
 
 // --- Configuración de Mercado Pago ---
 const mpClient = new MercadoPagoConfig({ accessToken: mpAccessToken });
 
-
-// *** CORRECCIÓN: Endpoint de "Salud" para Render para evitar el SIGTERM. ***
+// Endpoint de "Salud" para Render
 app.get('/', (req, res) => {
     res.send('El servidor de Ideas 1 Dólar está vivo y funcionando!');
 });
 
-
 // --- Endpoints de la API ---
-
-// Mover las rutas de la API bajo un prefijo /api
 const apiRouter = express.Router();
 
 // 1. Registro de Usuario
@@ -130,7 +145,6 @@ apiRouter.post('/create-payment-preference', async (req, res) => {
             currency_id: 'ARS',
         }],
         payer: { email: userEmail },
-        // *** MEJORA: Se pasa el external_reference en las URLs de retorno. ***
         back_urls: {
             success: `${frontendUrl}?status=approved&external_reference=${userId}`,
             failure: `${frontendUrl}?status=failure&external_reference=${userId}`,
@@ -138,7 +152,6 @@ apiRouter.post('/create-payment-preference', async (req, res) => {
         },
         auto_return: 'approved',
         external_reference: userId.toString(),
-        // *** CORRECCIÓN: Se usa la variable de entorno `backendUrl` para mayor fiabilidad. ***
         notification_url: `${backendUrl}/api/payment-webhook`
     };
     try {
@@ -159,7 +172,6 @@ apiRouter.post('/payment-webhook', async (req, res) => {
 
     if (type === 'payment' && data && data.id) {
         try {
-            // *** CORRECCIÓN CRÍTICA: Se usa el objeto 'Payment' correctamente. ***
             const payment = await new Payment(mpClient).get({ id: data.id });
             const userId = payment.external_reference;
             
@@ -172,11 +184,9 @@ apiRouter.post('/payment-webhook', async (req, res) => {
             }
         } catch (error) {
             console.error('Error procesando webhook de MP:', error.cause || error);
-            // Devolver 500 para que MP reintente si hay un error nuestro.
             return res.status(500).send('Error processing webhook');
         }
     }
-    // Devolver 200 siempre que se reciba la notificación para que MP no siga reintentando.
     res.sendStatus(200);
 });
 
@@ -219,7 +229,6 @@ apiRouter.post('/mark-as-paid', async (req, res) => {
         res.status(500).json({ message: 'Error interno del servidor.' });
     }
 });
-
 
 // Usar el router para todas las rutas /api
 app.use('/api', apiRouter);
