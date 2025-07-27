@@ -3,7 +3,8 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
-const mercadopago = require('mercadopago');
+// Importar los componentes necesarios de la nueva versión del SDK de Mercado Pago
+const { MercadoPagoConfig, Preference } = require('mercadopago');
 
 const app = express();
 // Render proporciona el puerto a través de una variable de entorno. Usamos 4000 como fallback para local.
@@ -21,12 +22,12 @@ app.use(express.json());
 const mpAccessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
 if (!mpAccessToken) {
     console.error("Error: La variable de entorno MERCADOPAGO_ACCESS_TOKEN no está definida.");
-    // No detenemos el servidor en producción, pero logueamos el error.
-    // process.exit(1); 
+    // En un escenario real, podríamos querer detener el servidor si la clave no está presente.
 }
-mercadopago.configure({
-    access_token: mpAccessToken,
-});
+
+// Inicializar el cliente de Mercado Pago con el Access Token (Sintaxis v2)
+const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
+
 
 // --- Base de Datos en Memoria (Simulación) ---
 // En una aplicación real, esto sería una base de datos como PostgreSQL, MongoDB, etc.
@@ -73,13 +74,13 @@ app.post('/api/login', (req, res) => {
 });
 
 
-// 3. Creación de Preferencia de Pago en Mercado Pago
+// 3. Creación de Preferencia de Pago en Mercado Pago (Actualizado a v2 del SDK)
 app.post('/api/create-payment-preference', async (req, res) => {
     // La URL del frontend se obtiene de una variable de entorno para flexibilidad.
     // Si no está definida, se usa un valor por defecto para desarrollo local.
     const frontendUrl = process.env.FRONTEND_URL || 'http://127.0.0.1:5500'; // Ajusta el puerto si usas otro para Live Server
 
-    const preference = {
+    const preferenceBody = {
         items: [
             {
                 title: 'Acceso a 10 Ideas de Negocio Exclusivas',
@@ -99,11 +100,13 @@ app.post('/api/create-payment-preference', async (req, res) => {
     };
 
     try {
-        const response = await mercadopago.preferences.create(preference);
-        console.log('Preferencia de pago creada:', response.body.id);
+        const preference = new Preference(client);
+        const result = await preference.create({ body: preferenceBody });
+        
+        console.log('Preferencia de pago creada:', result.id);
         res.status(201).json({
-            id: response.body.id,
-            init_point: response.body.init_point, // La URL de pago que usará el frontend
+            id: result.id,
+            init_point: result.init_point, // La URL de pago que usará el frontend
         });
     } catch (error) {
         console.error('Error al crear la preferencia de pago:', error);
