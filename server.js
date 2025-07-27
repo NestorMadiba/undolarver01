@@ -1,4 +1,4 @@
-// Cargar variables de entorno desde el archivo .env
+// Cargar variables de entorno desde el archivo .env para desarrollo local
 require('dotenv').config();
 
 const express = require('express');
@@ -10,13 +10,31 @@ const app = express();
 // Render proporciona el puerto a través de una variable de entorno. Usamos 4000 como fallback para local.
 const port = process.env.PORT || 4000;
 
+// --- Verificación de Variables de Entorno Críticas ---
+// Este bloque es crucial para un despliegue exitoso en Render.
+// Si las variables no están definidas, el servidor no arrancará, previniendo el error SIGTERM.
+const mpAccessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+const frontendUrl = process.env.FRONTEND_URL;
+
+if (!mpAccessToken) {
+    console.error("FATAL ERROR: La variable de entorno MERCADOPAGO_ACCESS_TOKEN no está definida.");
+    console.error("Por favor, configúrela en la pestaña 'Environment' de su servicio en Render.");
+    process.exit(1); // Detiene la aplicación si la variable no existe
+}
+
+if (!frontendUrl) {
+    console.error("FATAL ERROR: La variable de entorno FRONTEND_URL no está definida.");
+    console.error("Por favor, configúrela en la pestaña 'Environment' de su servicio en Render.");
+    process.exit(1); // Detiene la aplicación si la variable no existe
+}
+
 // --- Middlewares ---
 
-// Configuración de CORS más específica y segura para evitar errores "Failed to fetch"
-// Solo permite solicitudes desde la URL del frontend configurada en las variables de entorno.
+// Configuración de CORS más específica y segura.
+// Solo permite solicitudes desde la URL del frontend verificada.
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://127.0.0.1:5500', // Permite la URL de producción y un fallback para local
-  optionsSuccessStatus: 200 // Para compatibilidad con navegadores antiguos
+  origin: frontendUrl,
+  optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
 
@@ -25,12 +43,6 @@ app.use(express.json());
 
 
 // --- Configuración de Mercado Pago ---
-// Es CRUCIAL que el Access Token esté en una variable de entorno y no directamente en el código.
-const mpAccessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
-if (!mpAccessToken) {
-    console.error("Error: La variable de entorno MERCADOPAGO_ACCESS_TOKEN no está definida.");
-}
-
 // Inicializar el cliente de Mercado Pago con el Access Token (Sintaxis v2)
 const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
 
@@ -82,7 +94,7 @@ app.post('/api/login', (req, res) => {
         return res.status(401).json({ message: 'Credenciales inválidas.' });
     }
 
-    console.log('Usuario inició sesión:', user.email);
+    console.log(`Usuario inició sesión: ${user.email}`);
     res.status(200).json({ id: user.id, name: user.name, email: user.email, isPaid: user.paid });
 });
 
@@ -93,8 +105,7 @@ app.post('/api/create-payment-preference', async (req, res) => {
         return res.status(400).json({ message: 'Se requiere el ID del usuario para crear el pago.' });
     }
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://127.0.0.1:5500';
-
+    // Usamos la variable de entorno ya verificada
     const preferenceBody = {
         items: [
             {
@@ -153,10 +164,6 @@ app.post('/api/confirm-payment', (req, res) => {
 
 // --- Iniciar el Servidor ---
 app.listen(port, () => {
-    console.log(`Servidor escuchando en el puerto ${port}`);
-});
-
-// --- Iniciar el Servidor ---
-app.listen(port, () => {
+    // Solo registrar que está escuchando si todas las verificaciones pasaron.
     console.log(`Servidor escuchando en el puerto ${port}`);
 });
