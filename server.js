@@ -1,3 +1,4 @@
+
 // --- "CAJA NEGRA" DE ERRORES PARA DEPURACIÓN EN RENDER ---
 // Captura cualquier error no controlado que de otra manera haría que el proceso se cierre silenciosamente.
 process.on('uncaughtException', (error, origin) => {
@@ -30,7 +31,7 @@ const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
 const { Pool } = require('pg');
 
 const app = express();
-const port = process.env.PORT || 4000;
+const port = process.env.PORT || 10000;
 
 // --- Verificación de Variables de Entorno Críticas ---
 const mpAccessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
@@ -43,6 +44,15 @@ if (!mpAccessToken || !frontendUrl || !databaseUrl || !backendUrl) {
     console.error("Por favor, configúrelas en la pestaña 'Environment' de su servicio en Render.");
     process.exit(1);
 }
+
+if (backendUrl.endsWith('/') || backendUrl.endsWith('/api')) {
+    console.warn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    console.warn("!! ADVERTENCIA: La variable de entorno BACKEND_URL parece estar mal formada. !!");
+    console.warn(`!! Valor actual: "${backendUrl}"                                     !!`);
+    console.warn("!! No debe terminar con '/' ni incluir '/api'. Ejemplo: https://mi-backend.onrender.com !!");
+    console.warn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+}
+
 
 // --- Configuración de la Base de Datos PostgreSQL ---
 const pool = new Pool({
@@ -71,23 +81,23 @@ const initializeDatabase = async () => {
 };
 
 // --- Middlewares ---
-const corsOptions = {
-  origin: frontendUrl,
-  optionsSuccessStatus: 200
-};
-app.use(cors(corsOptions));
 app.use(express.json({ limit: '5mb' }));
 
-// --- Configuración de Mercado Pago ---
-const mpClient = new MercadoPagoConfig({ accessToken: mpAccessToken });
+// --- Endpoints ---
 
-// Endpoint de "Salud" para Render
+// Endpoint de "Salud" para Render (DEBE ESTAR ANTES DE CORS)
 app.get('/', (req, res) => {
     res.send('El servidor de Ideas 1 Dólar está vivo y funcionando!');
 });
 
-// --- Endpoints de la API ---
+// Router para la API, con CORS aplicado solo aquí
 const apiRouter = express.Router();
+
+const corsOptions = {
+  origin: frontendUrl,
+  optionsSuccessStatus: 200
+};
+apiRouter.use(cors(corsOptions));
 
 // 1. Registro de Usuario
 apiRouter.post('/register', async (req, res) => {
@@ -132,6 +142,7 @@ apiRouter.post('/login', async (req, res) => {
 });
 
 // 3. Creación de Preferencia de Pago
+const mpClient = new MercadoPagoConfig({ accessToken: mpAccessToken });
 apiRouter.post('/create-payment-preference', async (req, res) => {
     const { userId, userEmail } = req.body;
     if (!userId) return res.status(400).json({ message: 'Se requiere el ID del usuario.' });
@@ -160,7 +171,7 @@ apiRouter.post('/create-payment-preference', async (req, res) => {
         console.log(`Preferencia de pago creada para usuario ID ${userId}: ${result.id}`);
         res.status(201).json({ id: result.id, init_point: result.init_point });
     } catch (error) {
-        console.error('Error al crear la preferencia de pago:', error.cause || error);
+        console.error('Error al crear la preferencia de pago:', error.cause || error.message || error);
         res.status(500).json({ message: 'Error al contactar Mercado Pago.' });
     }
 });
@@ -183,7 +194,7 @@ apiRouter.post('/payment-webhook', async (req, res) => {
                  }
             }
         } catch (error) {
-            console.error('Error procesando webhook de MP:', error.cause || error);
+            console.error('Error procesando webhook de MP:', error.cause || error.message || error);
             return res.status(500).send('Error processing webhook');
         }
     }
