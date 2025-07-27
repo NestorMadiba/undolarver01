@@ -1,4 +1,4 @@
-/ Cargar variables de entorno desde el archivo .env
+// Cargar variables de entorno desde el archivo .env
 require('dotenv').config();
 
 const express = require('express');
@@ -11,8 +11,15 @@ const app = express();
 const port = process.env.PORT || 4000;
 
 // --- Middlewares ---
-// Permite que nuestro frontend (en otro dominio/puerto) se comunique con este backend
-app.use(cors());
+
+// Configuración de CORS más específica y segura para evitar errores "Failed to fetch"
+// Solo permite solicitudes desde la URL del frontend configurada en las variables de entorno.
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || 'http://127.0.0.1:5500', // Permite la URL de producción y un fallback para local
+  optionsSuccessStatus: 200 // Para compatibilidad con navegadores antiguos
+};
+app.use(cors(corsOptions));
+
 // Permite al servidor entender JSON que se envía en las solicitudes
 app.use(express.json());
 
@@ -143,6 +150,11 @@ app.post('/api/confirm-payment', (req, res) => {
     }
 });
 
+
+// --- Iniciar el Servidor ---
+app.listen(port, () => {
+    console.log(`Servidor escuchando en el puerto ${port}`);
+});
 
 // --- Iniciar el Servidor ---
 app.listen(port, () => {
