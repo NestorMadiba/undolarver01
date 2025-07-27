@@ -3,167 +3,197 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
-// Importar los componentes necesarios de la nueva versión del SDK de Mercado Pago
 const { MercadoPagoConfig, Preference } = require('mercadopago');
+const { Pool } = require('pg'); // Importar el cliente de PostgreSQL
 
 const app = express();
-// Render proporciona el puerto a través de una variable de entorno. Usamos 4000 como fallback para local.
 const port = process.env.PORT || 4000;
 
 // --- Verificación de Variables de Entorno Críticas ---
-// Este bloque es crucial para un despliegue exitoso en Render.
-// Si las variables no están definidas, el servidor no arrancará, previniendo el error SIGTERM.
 const mpAccessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
 const frontendUrl = process.env.FRONTEND_URL;
+const databaseUrl = process.env.DATABASE_URL; // Nueva variable para la base de datos
 
-if (!mpAccessToken) {
-    console.error("FATAL ERROR: La variable de entorno MERCADOPAGO_ACCESS_TOKEN no está definida.");
-    console.error("Por favor, configúrela en la pestaña 'Environment' de su servicio en Render.");
-    process.exit(1); // Detiene la aplicación si la variable no existe
+if (!mpAccessToken || !frontendUrl || !databaseUrl) {
+    console.error("FATAL ERROR: Una o más variables de entorno críticas no están definidas (MERCADOPAGO_ACCESS_TOKEN, FRONTEND_URL, DATABASE_URL).");
+    console.error("Por favor, configúrelas en la pestaña 'Environment' de su servicio en Render.");
+    process.exit(1);
 }
 
-if (!frontendUrl) {
-    console.error("FATAL ERROR: La variable de entorno FRONTEND_URL no está definida.");
-    console.error("Por favor, configúrela en la pestaña 'Environment' de su servicio en Render.");
-    process.exit(1); // Detiene la aplicación si la variable no existe
-}
+// --- Configuración de la Base de Datos PostgreSQL ---
+const pool = new Pool({
+  connectionString: databaseUrl,
+  // Render requiere SSL para conexiones externas, pero no para internas.
+  // Esta configuración es segura para el entorno de Render.
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
+
+// Función para inicializar la base de datos
+const initializeDatabase = async () => {
+    try {
+        const client = await pool.connect();
+        // Crear la tabla de usuarios si no existe
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                paid BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+        client.release();
+        console.log("Base de datos conectada y tabla 'users' asegurada.");
+    } catch (error) {
+        console.error("FATAL ERROR: No se pudo conectar o inicializar la base de datos.", error);
+        process.exit(1);
+    }
+};
+
 
 // --- Middlewares ---
-
-// Configuración de CORS más específica y segura.
-// Solo permite solicitudes desde la URL del frontend verificada.
 const corsOptions = {
   origin: frontendUrl,
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
-
-// Permite al servidor entender JSON que se envía en las solicitudes
 app.use(express.json());
 
-
 // --- Configuración de Mercado Pago ---
-// Inicializar el cliente de Mercado Pago con el Access Token (Sintaxis v2)
-const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
+const mpClient = new MercadoPagoConfig({ accessToken: mpAccessToken });
 
-
-// --- Base de Datos en Memoria (Simulación) ---
-// En una aplicación real, esto sería una base de datos como PostgreSQL, MongoDB, etc.
-// Los datos aquí se perderán si el servidor se reinicia.
-const users = [];
-
-
-// --- Endpoints de la API ---
+// --- Endpoints de la API (Ahora con Base de Datos) ---
 
 // 1. Registro de Usuario
-app.post('/api/register', (req, res) => {
+app.post('/api/register', async (req, res) => {
     const { name, email, password } = req.body;
-
     if (!name || !email || !password) {
         return res.status(400).json({ message: 'Todos los campos son requeridos.' });
     }
-
-    const userExists = users.find(user => user.email === email);
-    if (userExists) {
-        return res.status(400).json({ message: 'El correo electrónico ya está registrado.' });
+    // NOTA: En producción real, la contraseña debe ser "hasheada" antes de guardarla.
+    const query = 'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email, paid';
+    try {
+        const result = await pool.query(query, [name, email, password]);
+        const newUser = result.rows[0];
+        console.log(`Usuario registrado en DB: ${newUser.email}`);
+        res.status(201).json({ id: newUser.id, name: newUser.name, email: newUser.email, isPaid: newUser.paid });
+    } catch (error) {
+        if (error.code === '23505') { // Código de error para violación de constraint 'unique'
+            return res.status(400).json({ message: 'El correo electrónico ya está registrado.' });
+        }
+        console.error("Error en registro de usuario:", error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
     }
-
-    const newUser = { 
-        id: users.length + 1, 
-        name, 
-        email, 
-        password, // En una app real, la contraseña se hashearía
-        paid: false // Nuevo campo para rastrear el estado del pago
-    }; 
-    users.push(newUser);
-
-    console.log(`Usuario registrado: ${newUser.email}`); // Log para visibilidad en Render
-    res.status(201).json({ id: newUser.id, name: newUser.name, email: newUser.email, isPaid: newUser.paid });
 });
 
 // 2. Inicio de Sesión de Usuario
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
-
     if (!email || !password) {
         return res.status(400).json({ message: 'Email y contraseña son requeridos.' });
     }
-
-    const user = users.find(user => user.email === email);
-    if (!user || user.password !== password) { // En una app real, se compararía el hash de la contraseña
-        return res.status(401).json({ message: 'Credenciales inválidas.' });
+    const query = 'SELECT * FROM users WHERE email = $1';
+    try {
+        const result = await pool.query(query, [email]);
+        const user = result.rows[0];
+        // NOTA: En producción, comparar contraseñas hasheadas.
+        if (!user || user.password !== password) {
+            return res.status(401).json({ message: 'Credenciales inválidas.' });
+        }
+        console.log(`Usuario inició sesión: ${user.email}, Estado de pago: ${user.paid}`);
+        res.status(200).json({ id: user.id, name: user.name, email: user.email, isPaid: user.paid });
+    } catch (error) {
+        console.error("Error en inicio de sesión:", error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
     }
-
-    console.log(`Usuario inició sesión: ${user.email}`);
-    res.status(200).json({ id: user.id, name: user.name, email: user.email, isPaid: user.paid });
 });
 
-// 3. Creación de Preferencia de Pago en Mercado Pago
+// 3. Creación de Preferencia de Pago
 app.post('/api/create-payment-preference', async (req, res) => {
-    const { userId, userEmail } = req.body; // Recibimos el ID del usuario
-    if (!userId) {
-        return res.status(400).json({ message: 'Se requiere el ID del usuario para crear el pago.' });
-    }
+    const { userId, userEmail } = req.body;
+    if (!userId) return res.status(400).json({ message: 'Se requiere el ID del usuario.' });
 
-    // Usamos la variable de entorno ya verificada
     const preferenceBody = {
-        items: [
-            {
-                title: 'Acceso a 10 Ideas de Negocio Exclusivas',
-                description: 'Contenido digital con guías en PDF para emprender.',
-                quantity: 1,
-                unit_price: 1300,
-                currency_id: 'ARS',
-            },
-        ],
-        payer: {
-            email: userEmail,
-        },
+        items: [{
+            title: 'Acceso a 10 Ideas de Negocio Exclusivas',
+            description: 'Contenido digital con guías en PDF para emprender.',
+            quantity: 1,
+            unit_price: 1300,
+            currency_id: 'ARS',
+        }],
+        payer: { email: userEmail },
         back_urls: {
-            success: `${frontendUrl}/index.html`, // La data extra la añade MP automáticamente
-            failure: `${frontendUrl}/index.html`,
-            pending: `${frontendUrl}/index.html`,
+            success: frontendUrl,
+            failure: frontendUrl,
+            pending: frontendUrl,
         },
         auto_return: 'approved',
-        external_reference: userId.toString(), // Asociamos el pago al ID del usuario
+        external_reference: userId.toString(),
     };
-
     try {
-        const preference = new Preference(client);
+        const preference = new Preference(mpClient);
         const result = await preference.create({ body: preferenceBody });
-        
-        console.log(`Preferencia de pago creada para el usuario ${userId}: ${result.id}`);
-        res.status(201).json({
-            id: result.id,
-            init_point: result.init_point, // La URL de pago que usará el frontend
-        });
+        console.log(`Preferencia de pago creada para usuario ID ${userId}: ${result.id}`);
+        res.status(201).json({ id: result.id, init_point: result.init_point });
     } catch (error) {
         console.error('Error al crear la preferencia de pago:', error);
-        res.status(500).json({ message: 'Error del servidor al contactar Mercado Pago.' });
+        res.status(500).json({ message: 'Error al contactar Mercado Pago.' });
     }
 });
 
-// 4. Endpoint para confirmar el pago y marcar al usuario
-app.post('/api/confirm-payment', (req, res) => {
+// 4. Confirmación de Pago (desde el frontend, después de la redirección de MP)
+app.post('/api/confirm-payment', async (req, res) => {
     const { userId } = req.body;
-    if (!userId) {
-        return res.status(400).json({ message: 'User ID es requerido.' });
+    if (!userId) return res.status(400).json({ message: 'User ID es requerido.' });
+    
+    const query = 'UPDATE users SET paid = TRUE WHERE id = $1 RETURNING email';
+    try {
+        const result = await pool.query(query, [userId]);
+        if (result.rowCount > 0) {
+            console.log(`Pago confirmado en DB para el usuario: ${result.rows[0].email}`);
+            res.status(200).json({ message: 'Pago confirmado exitosamente.' });
+        } else {
+            console.error(`Intento de confirmación para usuario no encontrado en DB: ${userId}`);
+            res.status(404).json({ message: 'Usuario no encontrado.' });
+        }
+    } catch (error) {
+        console.error("Error al confirmar pago en DB:", error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
     }
+});
 
-    const user = users.find(u => u.id.toString() === userId.toString());
-    if (user) {
-        user.paid = true;
-        console.log(`Pago confirmado para el usuario: ${user.email}`); // Log para visibilidad en Render
-        res.status(200).json({ message: 'Pago confirmado exitosamente.' });
-    } else {
-        console.error(`Intento de confirmación de pago para usuario no encontrado: ${userId}`);
-        res.status(404).json({ message: 'Usuario no encontrado.' });
+// 5. Endpoint de Administración para Marcar Pago Manualmente
+app.post('/api/mark-as-paid', async (req, res) => {
+    const { email } = req.body;
+    // En un futuro, este endpoint debería estar protegido por una clave de API o autenticación de admin.
+    if (!email) return res.status(400).json({ message: 'El email del usuario es requerido.' });
+
+    const query = 'UPDATE users SET paid = TRUE WHERE email = $1 RETURNING email';
+    try {
+        const result = await pool.query(query, [email]);
+        if (result.rowCount > 0) {
+            console.log(`ADMIN: Pago marcado manualmente para el usuario: ${result.rows[0].email}`);
+            res.status(200).json({ message: `Usuario ${email} marcado como pagado.` });
+        } else {
+            console.warn(`ADMIN: Intento de marcar pago para email no encontrado: ${email}`);
+            res.status(404).json({ message: `Usuario con email ${email} no encontrado.` });
+        }
+    } catch (error) {
+        console.error("Error en la marcación manual de pago:", error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
     }
 });
 
 
 // --- Iniciar el Servidor ---
-app.listen(port, () => {
-    // Solo registrar que está escuchando si todas las verificaciones pasaron.
-    console.log(`Servidor escuchando en el puerto ${port}`);
-});
+const startServer = async () => {
+    await initializeDatabase();
+    app.listen(port, () => {
+        console.log(`Servidor escuchando en el puerto ${port}`);
+    });
+};
+
+startServer();
