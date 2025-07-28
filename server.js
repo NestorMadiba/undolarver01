@@ -1,3 +1,4 @@
+
 // Cargar variables de entorno desde el archivo .env
 require('dotenv').config();
 
@@ -9,6 +10,8 @@ const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
 const bcrypt = require('bcrypt');
 const sqlite3 = require('sqlite3');
 const { open } = require('sqlite');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 // Render proporciona el puerto a través de una variable de entorno. Usamos 10000 como fallback.
@@ -24,6 +27,22 @@ let db;
 
 async function initializeDatabase() {
     try {
+        // --- NUEVO: Asegurarse de que el directorio de la DB exista ---
+        // Esto es crucial para Render, ya que el disco persistente debe estar montado en /data
+        const dbDir = path.dirname(DB_PATH);
+        if (process.env.RENDER && !fs.existsSync(dbDir)) {
+            console.log(`El directorio de la base de datos (${dbDir}) no existe. Intentando crearlo.`);
+            try {
+                fs.mkdirSync(dbDir, { recursive: true });
+                console.log(`Directorio ${dbDir} creado.`);
+            } catch (mkdirErr) {
+                console.error(`Error crítico: No se pudo crear el directorio para la base de datos en ${dbDir}.`);
+                console.error('Esto usualmente significa que el Disco Persistente no está configurado o montado correctamente en Render.');
+                console.error('Por favor, verifica la configuración de Disks en tu servicio de Render.');
+                throw mkdirErr; // Lanzar el error para que sea capturado por el catch principal
+            }
+        }
+
         db = await open({
             filename: DB_PATH,
             driver: sqlite3.Database
@@ -40,9 +59,18 @@ async function initializeDatabase() {
         console.log("Base de datos conectada y tabla 'users' asegurada.");
     } catch (err) {
         console.error("Error fatal al inicializar la base de datos:", err);
+        // Si el error es de apertura, añadir un mensaje más específico para Render.
+        if (err.code === 'SQLITE_CANTOPEN') {
+             console.error("\n--- AYUDA PARA RENDER ---");
+             console.error("El error 'SQLITE_CANTOPEN' casi siempre significa que el servidor no puede escribir en el archivo de la base de datos.");
+             console.error("En Render, esto ocurre si el 'Disco Persistente' no está creado y montado en la ruta '/data'.");
+             console.error("Por favor, ve a la pestaña 'Disks' de tu servicio en Render y asegúrate de tener un disco con 'Mount Path' en '/data'.");
+             console.error("---------------------------\n");
+        }
         process.exit(1); // Detiene el servidor si la DB no puede iniciarse
     }
 }
+
 
 // --- Configuración de Mercado Pago (Sintaxis v2.x) ---
 const mpAccessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
