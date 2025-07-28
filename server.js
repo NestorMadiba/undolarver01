@@ -3,7 +3,9 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
-const mercadopago = require('mercadopago');
+// --- Actualización del SDK de Mercado Pago ---
+// Se importan los componentes necesarios de la nueva versión del SDK.
+const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
 const bcrypt = require('bcrypt');
 const sqlite3 = require('sqlite3');
 const { open } = require('sqlite');
@@ -42,15 +44,14 @@ async function initializeDatabase() {
     }
 }
 
-// --- Configuración de Mercado Pago ---
+// --- Configuración de Mercado Pago (Sintaxis v2.x) ---
 const mpAccessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
 if (!mpAccessToken) {
     console.error("Error: La variable de entorno MERCADOPAGO_ACCESS_TOKEN no está definida.");
-} else {
-    mercadopago.configure({
-        access_token: mpAccessToken,
-    });
 }
+// Se inicializa el cliente con el access token.
+const mpClient = new MercadoPagoConfig({ accessToken: mpAccessToken });
+
 
 // --- Endpoints de la API ---
 
@@ -129,14 +130,13 @@ app.post('/api/create-payment-preference', async (req, res) => {
         return res.status(400).json({ message: 'La información del usuario es requerida para el pago.' });
     }
     
-    // Robustly get and clean the frontend URL to avoid issues with trailing slashes or whitespace.
     let frontendUrl = (process.env.FRONTEND_URL || `http://127.0.0.1:5500`).trim();
     if (frontendUrl.endsWith('/')) {
         frontendUrl = frontendUrl.slice(0, -1);
     }
     const backendUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${port}`;
 
-    const preference = {
+    const preferenceBody = {
         items: [{
             title: 'Acceso a 10 Ideas de Negocio Exclusivas',
             description: 'Contenido digital con guías en PDF para emprender.',
@@ -158,14 +158,17 @@ app.post('/api/create-payment-preference', async (req, res) => {
     };
 
     try {
-        const response = await mercadopago.preferences.create(preference);
-        console.log('Preferencia de pago creada:', response.body.id);
+        // Se instancia la clase Preference con el cliente y se crea la preferencia.
+        const preference = new Preference(mpClient);
+        const result = await preference.create({ body: preferenceBody });
+        
+        console.log('Preferencia de pago creada:', result.id);
         res.status(201).json({
-            id: response.body.id,
-            init_point: response.body.init_point,
+            id: result.id,
+            init_point: result.init_point,
         });
     } catch (error) {
-        console.error('Error al crear la preferencia de pago:', error.cause || error);
+        console.error('Error al crear la preferencia de pago:', error);
         res.status(500).json({ message: 'Error del servidor al contactar Mercado Pago.' });
     }
 });
@@ -176,9 +179,13 @@ app.post('/api/mp-webhook', async (req, res) => {
 
     if (type === 'payment') {
         try {
-            const payment = await mercadopago.payment.findById(data.id);
-            const paymentStatus = payment.body.status;
-            const externalReference = payment.body.external_reference;
+            // Se instancia la clase Payment y se obtiene la información del pago.
+            const payment = new Payment(mpClient);
+            const paymentInfo = await payment.get({ id: data.id });
+            
+            // Se accede a los datos directamente desde el objeto de respuesta.
+            const paymentStatus = paymentInfo.status;
+            const externalReference = paymentInfo.external_reference;
 
             if (paymentStatus === 'approved' && externalReference) {
                 const userId = parseInt(externalReference, 10);
@@ -194,15 +201,13 @@ app.post('/api/mp-webhook', async (req, res) => {
 });
 
 // --- Iniciar el Servidor ---
-// Solo inicia el servidor después de que la base de datos esté lista.
 initializeDatabase().then(() => {
-    // Bind to 0.0.0.0 to ensure it's accessible in containerized environments like Render.
+    // Bind to 0.0.0.0 para asegurar accesibilidad en contenedores como Render.
     app.listen(port, '0.0.0.0', () => {
         console.log(`Servidor escuchando en http://0.0.0.0:${port}`);
         if (process.env.FRONTEND_URL) console.log(`URL del Frontend configurada: ${process.env.FRONTEND_URL}`);
         if (process.env.RENDER_EXTERNAL_URL) console.log(`URL del Backend configurada: ${process.env.RENDER_EXTERNAL_URL}`);
     });
 }).catch(err => {
-    // El error ya se logueó en initializeDatabase
-    // El proceso se detendrá, así que no es necesario hacer más aquí.
+    // El error ya fue logueado en initializeDatabase, el proceso se detendrá.
 });
