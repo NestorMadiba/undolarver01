@@ -128,8 +128,12 @@ app.post('/api/create-payment-preference', async (req, res) => {
     if (!userId || !userEmail) {
         return res.status(400).json({ message: 'La información del usuario es requerida para el pago.' });
     }
-
-    const frontendUrl = process.env.FRONTEND_URL || `http://127.0.0.1:5500`;
+    
+    // Robustly get and clean the frontend URL to avoid issues with trailing slashes or whitespace.
+    let frontendUrl = (process.env.FRONTEND_URL || `http://127.0.0.1:5500`).trim();
+    if (frontendUrl.endsWith('/')) {
+        frontendUrl = frontendUrl.slice(0, -1);
+    }
     const backendUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${port}`;
 
     const preference = {
@@ -192,8 +196,9 @@ app.post('/api/mp-webhook', async (req, res) => {
 // --- Iniciar el Servidor ---
 // Solo inicia el servidor después de que la base de datos esté lista.
 initializeDatabase().then(() => {
-    app.listen(port, () => {
-        console.log(`Servidor escuchando en el puerto ${port}`);
+    // Bind to 0.0.0.0 to ensure it's accessible in containerized environments like Render.
+    app.listen(port, '0.0.0.0', () => {
+        console.log(`Servidor escuchando en http://0.0.0.0:${port}`);
         if (process.env.FRONTEND_URL) console.log(`URL del Frontend configurada: ${process.env.FRONTEND_URL}`);
         if (process.env.RENDER_EXTERNAL_URL) console.log(`URL del Backend configurada: ${process.env.RENDER_EXTERNAL_URL}`);
     });
