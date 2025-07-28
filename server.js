@@ -1,153 +1,138 @@
-
-// --- "CAJA NEGRA" DE ERRORES PARA DEPURACIÓN EN RENDER ---
-// Captura cualquier error no controlado que de otra manera haría que el proceso se cierre silenciosamente.
-process.on('uncaughtException', (error, origin) => {
-    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-    console.log('!! ERROR NO CAPTURADO (uncaughtException) !!');
-    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-    console.log('Error:', error);
-    console.log('Origen:', origin);
-    console.log('Cerrando el proceso para evitar un estado inconsistente.');
-    process.exit(1); // Es crucial cerrar después de un error no capturado.
-});
-
-// Captura cualquier promesa rechazada que no tenga un .catch().
-process.on('unhandledRejection', (reason, promise) => {
-    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-    console.log('!! PROMESA RECHAZADA (unhandledRejection) !!');
-    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-    console.log('Razón del rechazo:', reason);
-    // No cerramos el proceso aquí, pero lo registramos para depuración.
-});
-// -----------------------------------------------------------
-
-
-// Cargar variables de entorno desde el archivo .env para desarrollo local
+// Cargar variables de entorno desde el archivo .env
 require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
-const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
-const { Pool } = require('pg');
+const mercadopago = require('mercadopago');
+const bcrypt = require('bcrypt');
+const sqlite3 = require('sqlite3');
+const { open } = require('sqlite');
 
 const app = express();
+// Render proporciona el puerto a través de una variable de entorno. Usamos 10000 como fallback.
 const port = process.env.PORT || 10000;
 
-// --- Verificación de Variables de Entorno Críticas ---
-const mpAccessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
-const frontendUrl = process.env.FRONTEND_URL;
-const databaseUrl = process.env.DATABASE_URL;
-const backendUrl = process.env.BACKEND_URL; 
+// --- Middlewares ---
+app.use(cors());
+app.use(express.json());
 
-if (!mpAccessToken || !frontendUrl || !databaseUrl || !backendUrl) {
-    console.error("FATAL ERROR: Faltan variables de entorno críticas (MERCADOPAGO_ACCESS_TOKEN, FRONTEND_URL, DATABASE_URL, BACKEND_URL).");
-    console.error("Por favor, configúrelas en la pestaña 'Environment' de su servicio en Render.");
-    process.exit(1);
-}
+// --- Configuración de la Base de Datos (SQLite) ---
+const DB_PATH = process.env.RENDER ? '/data/database.db' : 'database.db';
+let db;
 
-if (backendUrl.endsWith('/') || backendUrl.endsWith('/api')) {
-    console.warn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-    console.warn("!! ADVERTENCIA: La variable de entorno BACKEND_URL parece estar mal formada. !!");
-    console.warn(`!! Valor actual: "${backendUrl}"                                     !!`);
-    console.warn("!! No debe terminar con '/' ni incluir '/api'. Ejemplo: https://mi-backend.onrender.com !!");
-    console.warn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-}
-
-
-// --- Configuración de la Base de Datos PostgreSQL ---
-const pool = new Pool({
-  connectionString: databaseUrl,
-});
-
-const initializeDatabase = async () => {
+async function initializeDatabase() {
     try {
-        const client = await pool.connect();
-        await client.query(`
+        db = await open({
+            filename: DB_PATH,
+            driver: sqlite3.Database
+        });
+        await db.exec(`
             CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(255) NOT NULL,
-                email VARCHAR(255) UNIQUE NOT NULL,
-                password VARCHAR(255) NOT NULL,
-                paid BOOLEAN DEFAULT FALSE,
-                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                email TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                has_paid BOOLEAN NOT NULL DEFAULT FALSE
             );
         `);
-        client.release();
         console.log("Base de datos conectada y tabla 'users' asegurada.");
-    } catch (error) {
-        console.error("FATAL ERROR: No se pudo conectar o inicializar la base de datos.", error);
-        process.exit(1);
+    } catch (err) {
+        console.error("Error fatal al inicializar la base de datos:", err);
+        process.exit(1); // Detiene el servidor si la DB no puede iniciarse
     }
-};
+}
 
-// --- Middlewares ---
-app.use(express.json({ limit: '5mb' }));
+// --- Configuración de Mercado Pago ---
+const mpAccessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+if (!mpAccessToken) {
+    console.error("Error: La variable de entorno MERCADOPAGO_ACCESS_TOKEN no está definida.");
+} else {
+    mercadopago.configure({
+        access_token: mpAccessToken,
+    });
+}
 
-// --- Endpoints ---
-
-// Endpoint de "Salud" para Render (DEBE ESTAR ANTES DE CORS)
-app.get('/', (req, res) => {
-    res.send('El servidor de Ideas 1 Dólar está vivo y funcionando!');
-});
-
-// Router para la API, con CORS aplicado solo aquí
-const apiRouter = express.Router();
-
-const corsOptions = {
-  origin: frontendUrl,
-  optionsSuccessStatus: 200
-};
-apiRouter.use(cors(corsOptions));
+// --- Endpoints de la API ---
 
 // 1. Registro de Usuario
-apiRouter.post('/register', async (req, res) => {
+app.post('/api/register', async (req, res) => {
     const { name, email, password } = req.body;
+
     if (!name || !email || !password) {
         return res.status(400).json({ message: 'Todos los campos son requeridos.' });
     }
-    const query = 'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email, paid';
+
     try {
-        const result = await pool.query(query, [name, email, password]);
-        const newUser = result.rows[0];
-        console.log(`Usuario registrado en DB: ${newUser.email}`);
-        res.status(201).json({ id: newUser.id, name: newUser.name, email: newUser.email, isPaid: newUser.paid });
-    } catch (error) {
-        if (error.code === '23505') {
-            return res.status(400).json({ message: 'El correo electrónico ya está registrado.' });
+        const userExists = await db.get('SELECT * FROM users WHERE email = ?', email);
+        if (userExists) {
+            return res.status(409).json({ message: 'El correo electrónico ya está registrado.' });
         }
-        console.error("Error en registro de usuario:", error);
+
+        const password_hash = await bcrypt.hash(password, 10);
+        const result = await db.run(
+            'INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)',
+            name, email, password_hash
+        );
+
+        const newUser = {
+            id: result.lastID,
+            name,
+            email,
+            has_paid: false
+        };
+
+        console.log('Usuario registrado:', newUser.email);
+        res.status(201).json(newUser);
+    } catch (error) {
+        console.error("Error en /api/register:", error);
         res.status(500).json({ message: 'Error interno del servidor.' });
     }
 });
 
 // 2. Inicio de Sesión de Usuario
-apiRouter.post('/login', async (req, res) => {
+app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
+
     if (!email || !password) {
         return res.status(400).json({ message: 'Email y contraseña son requeridos.' });
     }
-    const query = 'SELECT * FROM users WHERE email = $1';
+
     try {
-        const result = await pool.query(query, [email]);
-        const user = result.rows[0];
-        if (!user || user.password !== password) {
+        const user = await db.get('SELECT * FROM users WHERE email = ?', email);
+        if (!user) {
             return res.status(401).json({ message: 'Credenciales inválidas.' });
         }
-        console.log(`Usuario inició sesión: ${user.email}, Estado de pago: ${user.paid}`);
-        res.status(200).json({ id: user.id, name: user.name, email: user.email, isPaid: user.paid });
+
+        const passwordMatch = await bcrypt.compare(password, user.password_hash);
+        if (!passwordMatch) {
+            return res.status(401).json({ message: 'Credenciales inválidas.' });
+        }
+
+        console.log('Usuario inició sesión:', user.email);
+        res.status(200).json({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            has_paid: !!user.has_paid
+        });
     } catch (error) {
-        console.error("Error en inicio de sesión:", error);
+        console.error("Error en /api/login:", error);
         res.status(500).json({ message: 'Error interno del servidor.' });
     }
 });
 
-// 3. Creación de Preferencia de Pago
-const mpClient = new MercadoPagoConfig({ accessToken: mpAccessToken });
-apiRouter.post('/create-payment-preference', async (req, res) => {
+// 3. Creación de Preferencia de Pago en Mercado Pago
+app.post('/api/create-payment-preference', async (req, res) => {
     const { userId, userEmail } = req.body;
-    if (!userId) return res.status(400).json({ message: 'Se requiere el ID del usuario.' });
 
-    const preferenceBody = {
+    if (!userId || !userEmail) {
+        return res.status(400).json({ message: 'La información del usuario es requerida para el pago.' });
+    }
+
+    const frontendUrl = process.env.FRONTEND_URL || `http://127.0.0.1:5500`;
+    const backendUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${port}`;
+
+    const preference = {
         items: [{
             title: 'Acceso a 10 Ideas de Negocio Exclusivas',
             description: 'Contenido digital con guías en PDF para emprender.',
@@ -155,103 +140,64 @@ apiRouter.post('/create-payment-preference', async (req, res) => {
             unit_price: 1300,
             currency_id: 'ARS',
         }],
-        payer: { email: userEmail },
-        back_urls: {
-            success: `${frontendUrl}?status=approved&external_reference=${userId}`,
-            failure: `${frontendUrl}?status=failure&external_reference=${userId}`,
-            pending: `${frontendUrl}?status=pending&external_reference=${userId}`,
+        payer: {
+            email: userEmail,
         },
-        auto_return: 'approved',
         external_reference: userId.toString(),
-        notification_url: `${backendUrl}/api/payment-webhook`
+        back_urls: {
+            success: `${frontendUrl}/index.html?status=approved`,
+            failure: `${frontendUrl}/index.html?status=failure`,
+            pending: `${frontendUrl}/index.html?status=pending`,
+        },
+        notification_url: `${backendUrl}/api/mp-webhook`,
+        auto_return: 'approved',
     };
+
     try {
-        const preference = new Preference(mpClient);
-        const result = await preference.create({ body: preferenceBody });
-        console.log(`Preferencia de pago creada para usuario ID ${userId}: ${result.id}`);
-        res.status(201).json({ id: result.id, init_point: result.init_point });
+        const response = await mercadopago.preferences.create(preference);
+        console.log('Preferencia de pago creada:', response.body.id);
+        res.status(201).json({
+            id: response.body.id,
+            init_point: response.body.init_point,
+        });
     } catch (error) {
-        console.error('Error al crear la preferencia de pago:', error.cause || error.message || error);
-        res.status(500).json({ message: 'Error al contactar Mercado Pago.' });
+        console.error('Error al crear la preferencia de pago:', error.cause || error);
+        res.status(500).json({ message: 'Error del servidor al contactar Mercado Pago.' });
     }
 });
 
-// 4. Webhook de MercadoPago
-apiRouter.post('/payment-webhook', async (req, res) => {
+// 4. Webhook para notificaciones de Mercado Pago
+app.post('/api/mp-webhook', async (req, res) => {
     const { type, data } = req.body;
-    console.log('Webhook de Mercado Pago recibido:', req.body);
 
-    if (type === 'payment' && data && data.id) {
+    if (type === 'payment') {
         try {
-            const payment = await new Payment(mpClient).get({ id: data.id });
-            const userId = payment.external_reference;
-            
-            if (payment.status === 'approved' && userId) {
-                 const query = 'UPDATE users SET paid = TRUE WHERE id = $1 RETURNING email';
-                 const result = await pool.query(query, [parseInt(userId, 10)]);
-                 if (result.rowCount > 0) {
-                    console.log(`WEBHOOK: Pago confirmado en DB para el usuario: ${result.rows[0].email} (ID: ${userId})`);
-                 }
+            const payment = await mercadopago.payment.findById(data.id);
+            const paymentStatus = payment.body.status;
+            const externalReference = payment.body.external_reference;
+
+            if (paymentStatus === 'approved' && externalReference) {
+                const userId = parseInt(externalReference, 10);
+                await db.run('UPDATE users SET has_paid = TRUE WHERE id = ?', userId);
+                console.log(`Pago aprobado para usuario ID ${userId}. Acceso concedido.`);
             }
         } catch (error) {
-            console.error('Error procesando webhook de MP:', error.cause || error.message || error);
-            return res.status(500).send('Error processing webhook');
+            console.error('Error procesando el webhook de Mercado Pago:', error);
+            return res.sendStatus(500);
         }
     }
     res.sendStatus(200);
 });
 
-// 5. Confirmación de Pago (desde el frontend, como respaldo)
-apiRouter.post('/confirm-payment', async (req, res) => {
-    const { userId } = req.body;
-    if (!userId) return res.status(400).json({ message: 'User ID es requerido.' });
-    
-    const query = 'UPDATE users SET paid = TRUE WHERE id = $1 RETURNING email';
-    try {
-        const result = await pool.query(query, [parseInt(userId, 10)]);
-        if (result.rowCount > 0) {
-            console.log(`Pago confirmado en DB (vía frontend) para el usuario: ${result.rows[0].email}`);
-            res.status(200).json({ message: 'Pago confirmado exitosamente.' });
-        } else {
-            res.status(404).json({ message: 'Usuario no encontrado.' });
-        }
-    } catch (error) {
-        console.error("Error al confirmar pago en DB:", error);
-        res.status(500).json({ message: 'Error interno del servidor.' });
-    }
-});
-
-// 6. Endpoint de Administración para Marcar Pago Manualmente
-apiRouter.post('/mark-as-paid', async (req, res) => {
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ message: 'El email del usuario es requerido.' });
-
-    const query = 'UPDATE users SET paid = TRUE WHERE email = $1 RETURNING email';
-    try {
-        const result = await pool.query(query, [email]);
-        if (result.rowCount > 0) {
-            console.log(`ADMIN: Pago marcado manualmente para el usuario: ${result.rows[0].email}`);
-            res.status(200).json({ message: `Usuario ${email} marcado como pagado.` });
-        } else {
-            res.status(404).json({ message: `Usuario con email ${email} no encontrado.` });
-        }
-    } catch (error) {
-        console.error("Error en la marcación manual de pago:", error);
-        res.status(500).json({ message: 'Error interno del servidor.' });
-    }
-});
-
-// Usar el router para todas las rutas /api
-app.use('/api', apiRouter);
-
 // --- Iniciar el Servidor ---
-const startServer = async () => {
-    await initializeDatabase();
+// Solo inicia el servidor después de que la base de datos esté lista.
+initializeDatabase().then(() => {
     app.listen(port, () => {
         console.log(`Servidor escuchando en el puerto ${port}`);
-        console.log(`URL del Frontend configurada: ${frontendUrl}`);
-        console.log(`URL del Backend configurada: ${backendUrl}`);
+        if (process.env.FRONTEND_URL) console.log(`URL del Frontend configurada: ${process.env.FRONTEND_URL}`);
+        if (process.env.RENDER_EXTERNAL_URL) console.log(`URL del Backend configurada: ${process.env.RENDER_EXTERNAL_URL}`);
     });
-};
-
-startServer();
+}).catch(err => {
+    // El error ya se logueó en initializeDatabase
+    // El proceso se detendrá, así que no es necesario hacer más aquí.
+});
